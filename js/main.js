@@ -38,7 +38,7 @@
       } else if (r > 1.12) {
         frame.classList.add("landscape");
       } else if (r < 0.88) {
-        frame.classList.add("portrait");
+        frame.classList.add("tall");
       } else {
         frame.classList.add("square");
       }
@@ -138,23 +138,46 @@
     });
   }
 
-  /* ---- nav active state ---- */
+  /* ---- nav active state (scroll spy) ---- */
   var navLinks = document.querySelectorAll(".nav-links a");
-  var sectionObserver = new IntersectionObserver(function (entries) {
-    entries.forEach(function (en) {
-      if (en.isIntersecting) {
-        var id = en.target.id;
-        navLinks.forEach(function (l) {
-          l.classList.toggle("active", l.getAttribute("href") === "#" + id);
-        });
+  var spySections = ["artist", "character", "modeling"]
+    .map(function (id) { return document.getElementById(id); })
+    .filter(Boolean);
+
+  function updateActiveNav() {
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+    var line = scrollTop + 96; // point just below the fixed nav
+    var currentId = "";
+
+    spySections.forEach(function (section) {
+      if (section.offsetTop <= line) {
+        currentId = section.id;
       }
     });
-  }, { threshold: 0.4 });
 
-  ["artist", "character", "modeling"].forEach(function (id) {
-    var s = document.getElementById(id);
-    if (s) sectionObserver.observe(s);
-  });
+    // Snap to the last section once the page is scrolled to the bottom.
+    if (window.innerHeight + scrollTop >= document.documentElement.scrollHeight - 4) {
+      currentId = spySections[spySections.length - 1].id;
+    }
+
+    navLinks.forEach(function (link) {
+      link.classList.toggle("active", link.getAttribute("href") === "#" + currentId);
+    });
+  }
+
+  var navScrollTicking = false;
+  window.addEventListener("scroll", function () {
+    if (!navScrollTicking) {
+      window.requestAnimationFrame(function () {
+        updateActiveNav();
+        navScrollTicking = false;
+      });
+      navScrollTicking = true;
+    }
+  }, { passive: true });
+
+  window.addEventListener("resize", updateActiveNav);
+  updateActiveNav();
 
   /* ---- lightbox ---- */
   var lb = document.getElementById("lightbox");
